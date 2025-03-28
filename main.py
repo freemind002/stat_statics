@@ -193,8 +193,8 @@ class TbStatsMonthly(object):
                     country=pl.when(pl.col("country").str.contains("東南亞地區"))
                     .then(pl.col("country_02"))
                     .otherwise(pl.col("country")),
-                    YEAR=pl.lit(int(month.split("-")[0])),
-                    MONTH=pl.lit(int(month.split("-")[-1])),
+                    year=pl.lit(int(month.split("-")[0])),
+                    month=pl.lit(int(month.split("-")[-1])),
                 )
                 .filter(~pl.col("country").str.contains("Total"))
                 .drop("country_02")
@@ -231,8 +231,8 @@ class TbStatsMonthly(object):
                     continent=pl.when(pl.col("country") == "其他 Others")
                     .then(pl.lit("其他"))
                     .otherwise(pl.col("continent")),
-                    YEAR=pl.lit(int(month.split("-")[0])),
-                    MONTH=pl.lit(int(month.split("-")[-1])),
+                    year=pl.lit(int(month.split("-")[0])),
+                    month=pl.lit(int(month.split("-")[-1])),
                 )
                 .collect()
                 .to_dicts()
