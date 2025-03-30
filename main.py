@@ -180,31 +180,26 @@ class TbStatsMonthly(object):
             result_list += (
                 lf.select(cs.by_index(range(0, 6)))
                 .rename(mapping)
-                .with_columns(pl.col("total").str.extract(r"^(\d+)$", 1).cast(pl.Int64))
+                .with_columns(pl.col("total").str.extract(r"^(\d+)$", 1))
                 .filter(pl.col("total").is_not_null())
                 .with_columns(
                     pl.col("country").fill_null(strategy="forward"),
                     pl.col("continent").fill_null(strategy="forward"),
                 )
-                .with_columns(
+                .select(
                     continent=pl.when(pl.col("country") == "未列明 Unstated")
                     .then(pl.lit("未列明"))
                     .otherwise(pl.col("continent")),
                     country=pl.when(pl.col("country").str.contains("東南亞地區"))
                     .then(pl.col("country_02"))
                     .otherwise(pl.col("country")),
-                    year=pl.lit(int(month.split("-")[0])),
-                    month=pl.lit(int(month.split("-")[-1])),
+                    total=pl.col("total").str.to_integer(),
+                    oversears_chinese=pl.col("oversears_chinese").str.to_integer(),
+                    foreigners=pl.col("foreigners").str.to_integer(),
+                    year=pl.lit(month.split("-")[0]).str.to_integer(),
+                    month=pl.lit(month.split("-")[-1]).str.to_integer(),
                 )
                 .filter(~pl.col("country").str.contains("Total"))
-                .drop("country_02")
-                .cast(
-                    {
-                        "total": pl.Int64,
-                        "oversears_chinese": pl.Int64,
-                        "foreigners": pl.Int64,
-                    }
-                )
                 .collect()
                 .to_dicts()
             )
@@ -221,18 +216,22 @@ class TbStatsMonthly(object):
             result_list += (
                 lf.select(cs.by_index(range(0, 3)))
                 .rename(mapping)
-                .with_columns(pl.col("total").str.extract(r"^(\d+)$", 1).cast(pl.Int64))
-                .filter(pl.col("total").is_not_null())
-                .filter(~pl.col("country").str.contains("Total"))
+                .with_columns(pl.col("total").str.extract(r"^(\d+)$", 1))
+                .filter(
+                    (pl.col("total").is_not_null())
+                    & (~pl.col("country").str.contains("Total"))
+                )
                 .with_columns(
                     pl.col("continent").fill_null(strategy="forward"),
                 )
-                .with_columns(
+                .select(
                     continent=pl.when(pl.col("country") == "其他 Others")
                     .then(pl.lit("其他"))
                     .otherwise(pl.col("continent")),
-                    year=pl.lit(int(month.split("-")[0])),
-                    month=pl.lit(int(month.split("-")[-1])),
+                    country=pl.col("country"),
+                    total=pl.col("total").str.to_integer(),
+                    year=pl.lit(month.split("-")[0]).str.to_integer(),
+                    month=pl.lit(month.split("-")[-1]).str.to_integer(),
                 )
                 .collect()
                 .to_dicts()
