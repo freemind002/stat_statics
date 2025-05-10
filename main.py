@@ -4,7 +4,7 @@ import os
 import re
 from random import uniform
 from time import sleep
-from typing import Dict, Literal, Set, Text, Tuple, Union
+from typing import Dict, List, Literal, Set, Text, Tuple, Union
 
 import arrow
 import polars as pl
@@ -151,6 +151,49 @@ class TbStatsMonthly(object):
             month (Text): 抓取的資料為哪個月
             cat (Literal[&quot;inbound&quot;, &quot;outbound&quot;]): 作為要選擇哪一種處理方式
         """
+
+        def _get_mapping(
+            cat: Literal["inbound", "outbound"], column_list: List[Text]
+        ) -> Dict[Text, Text]:
+            """定義rename所需的mapping
+
+            Args:
+                cat (Literal[&quot;inbound&quot;, &quot;outbound&quot;]): 規定輸入的參數，用此參數決定產生何種的mapping
+                column_list (List[Text]): column的名稱
+
+            Returns:
+                Dict[Text, Text]: rename所需的mapping
+            """
+            mapping = {}
+            if cat == "inbound":
+                for index, column in enumerate(column_list):
+                    if index == 0:
+                        mapping[column] = "continent"
+                    elif index == 1:
+                        mapping[column] = "country"
+                    elif index == 2:
+                        mapping[column] = "country_02"
+                    elif index == 3:
+                        mapping[column] = "total"
+                    elif index == 4:
+                        mapping[column] = "oversears_chinese"
+                    elif index == 5:
+                        mapping[column] = "foreigners"
+                    else:
+                        break
+            elif cat == "outbound":
+                for index, column in enumerate(column_list):
+                    if index == 0:
+                        mapping[column] = "continent"
+                    elif index == 1:
+                        mapping[column] = "country"
+                    elif index == 2:
+                        mapping[column] = "total"
+                    else:
+                        break
+
+            return mapping
+
         lf = pl.read_excel(
             self.cat_dic["src_path"].joinpath(
                 "{}_{}{}.xlsx".format(
@@ -158,25 +201,11 @@ class TbStatsMonthly(object):
                 )
             )
         ).lazy()
-        column_list = lf.collect().columns
-        mapping = {}
+        column_list = lf.columns
+
+        mapping = _get_mapping(cat, column_list)
         result_list = []
         if cat == "inbound":
-            for index, column in enumerate(column_list):
-                if index == 0:
-                    mapping[column] = "continent"
-                elif index == 1:
-                    mapping[column] = "country"
-                elif index == 2:
-                    mapping[column] = "country_02"
-                elif index == 3:
-                    mapping[column] = "total"
-                elif index == 4:
-                    mapping[column] = "oversears_chinese"
-                elif index == 5:
-                    mapping[column] = "foreigners"
-                else:
-                    break
             result_list += (
                 lf.select(cs.by_index(range(0, 6)))
                 .rename(mapping)
@@ -204,15 +233,6 @@ class TbStatsMonthly(object):
                 .to_dicts()
             )
         elif cat == "outbound":
-            for index, column in enumerate(column_list):
-                if index == 0:
-                    mapping[column] = "continent"
-                elif index == 1:
-                    mapping[column] = "country"
-                elif index == 2:
-                    mapping[column] = "total"
-                else:
-                    break
             result_list += (
                 lf.select(cs.by_index(range(0, 3)))
                 .rename(mapping)
