@@ -94,20 +94,6 @@ class TbStatsMonthly(object):
         else:
             pass
 
-    @staticmethod
-    def _set_options() -> Union[uc.ChromeOptions, Options]:
-        """設定options
-
-        Returns:
-            Union[uc.ChromeOptions, Options]: 設定的options
-        """
-        options = uc.ChromeOptions()
-        # options = webdriver.ChromeOptions()
-        options.add_argument("--incognito")
-        options.add_argument("user-agengt={}".format(UserAgent().random))
-
-        return options
-
     def _get_final_month(self) -> Union[Text, None]:
         """確認網站上最新資料的月份
 
@@ -117,9 +103,23 @@ class TbStatsMonthly(object):
         Returns:
             Union[Text, None]: 網站上最新資料的月份
         """
+
+        def _set_options() -> Union[uc.ChromeOptions, Options]:
+            """設定options
+
+            Returns:
+                Union[uc.ChromeOptions, Options]: 設定的options
+            """
+            options = uc.ChromeOptions()
+            # options = webdriver.ChromeOptions()
+            options.add_argument("--incognito")
+            options.add_argument("user-agengt={}".format(UserAgent().random))
+
+            return options
+
         current_except = None
         try:
-            driver = uc.Chrome(headless=False, options=self._set_options())
+            driver = uc.Chrome(headless=False, options=_set_options())
             base_url = self.cat_dic["url"]
             driver.get(base_url)
             driver.implicitly_wait(200)
@@ -201,7 +201,7 @@ class TbStatsMonthly(object):
                 )
             )
         ).lazy()
-        column_list = lf.columns
+        column_list = lf.collect_schema().names()
 
         mapping = _get_mapping(cat, column_list)
         result_list = []
@@ -308,6 +308,5 @@ class TbStatsMonthly(object):
 
 
 if __name__ == "__main__":
-    cat_list = ["inbound", "outbound"]
-    for cat in cat_list:
+    for cat in settings.cat_dict.keys():
         TbStatsMonthly(cat=cat).main()
